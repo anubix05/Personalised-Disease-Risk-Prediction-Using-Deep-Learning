@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personalised Disease Risk Prediction Using Deep Learning</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #0f172a;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.1) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.1) 0px, transparent 50%);
+            color: #f1f5f9;
+            min-height: 100vh;
+            padding: 40px 20px;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 40px;
+            align-items: start;
+        }
+
+        @media (max-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+        }
+
+        /* ─── Header ─── */
+        .header {
+            grid-column: 1 / -1;
+            text-align: left;
+            margin-bottom: 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 24px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            margin-bottom: 8px;
+            color: #f1f5f9;
+        }
+
+        .header h1 span.gradient-text {
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header p {
+            font-size: 1.05rem;
+            color: #94a3b8;
+            font-weight: 400;
+        }
+
+        /* ─── Disease Selector Navigation (Sidebar) ─── */
+        .disease-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 0;
+            background: rgba(30, 41, 59, 0.5);
+            padding: 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 40px;
+        }
+
+        .disease-btn {
+            width: 100%;
+            text-align: left;
+            padding: 14px 20px;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 600;
+            color: #94a3b8;
+            background: transparent;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .disease-btn:hover {
+            color: #f1f5f9;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .disease-btn.active {
+            background: #6366f1;
+            color: white;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        }
+
+        .disease-btn.inactive {
+            color: rgba(148, 163, 184, 0.4);
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        /* ─── Main Content Layout ─── */
+        .content {
+            display: grid;
+            grid-template-columns: 1.15fr 0.85fr;
+            gap: 32px;
+            align-items: start;
+        }
+
+        @media (max-width: 968px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ─── Form & Result Panels (Glassmorphism Cards) ─── */
+        .form-panel, .results-panel {
+            background: rgba(30, 41, 59, 0.7);
+            border-radius: 20px;
+            padding: 32px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+        }
+
+        .form-panel h2, .results-panel h2 {
+            color: #f1f5f9;
+            margin-bottom: 28px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.015em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-panel h2::after {
+            content: '';
+            flex-grow: 1;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.08);
+            margin-left: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #cbd5e1;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .form-group input[type="number"],
+        .form-group select {
+            width: 100%;
+            padding: 14px 16px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            font-size: 0.95rem;
+            color: white;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .form-group input[type="number"]::placeholder {
+            color: #64748b;
+        }
+
+        .form-group input[type="number"]:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+            background: rgba(15, 23, 42, 0.8);
+        }
+
+        .form-group select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            padding-right: 45px;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 16px;
+            margin-top: 36px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 15px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .btn-predict {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.25);
+        }
+
+        .btn-predict:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+            filter: brightness(1.1);
+        }
+
+        .btn-predict:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-reset {
+            background: rgba(255, 255, 255, 0.05);
+            color: #e2e8f0;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .btn-reset:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        /* ─── Results Panel ─── */
+        .results-panel {
+            display: none;
+        }
+
+        .results-panel.show {
+            display: block;
+            animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ─── Risk Percentage Display ─── */
+        .risk-display {
+            text-align: center;
+            margin-bottom: 32px;
+            padding: 32px;
+            border-radius: 16px;
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .risk-percentage {
+            font-size: 4rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -0.03em;
+        }
+
+        .risk-percentage.low {
+            color: #10b981;
+            text-shadow: 0 0 25px rgba(16, 185, 129, 0.2);
+        }
+
+        .risk-percentage.medium {
+            color: #f59e0b;
+            text-shadow: 0 0 25px rgba(245, 158, 11, 0.2);
+        }
+
+        .risk-percentage.high {
+            color: #ef4444;
+            text-shadow: 0 0 25px rgba(239, 68, 68, 0.2);
+        }
+
+        .risk-label {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .risk-label.low { color: #10b981; }
+        .risk-label.medium { color: #f59e0b; }
+        .risk-label.high { color: #ef4444; }
+
+        .risk-bar {
+            height: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 9999px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .risk-bar-fill {
+            height: 100%;
+            border-radius: 9999px;
+            transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .risk-bar-fill.low { background: #10b981; }
+        .risk-bar-fill.medium { background: #f59e0b; }
+        .risk-bar-fill.high { background: #ef4444; }
+
+        .accuracy-box {
+            font-size: 0.85rem;
+            color: #64748b;
+            display: inline-block;
+            padding: 4px 12px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 9999px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* ─── Recommendations ─── */
+        .recommendations h3 {
+            color: #cbd5e1;
+            margin-bottom: 16px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+        }
+
+        .recommendation-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .recommendation-list li {
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border-left: 4px solid #6366f1;
+            border-radius: 0 12px 12px 0;
+            color: #cbd5e1;
+            font-size: 0.925rem;
+            line-height: 1.6;
+        }
+
+        /* ─── Loading Overlay ─── */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(4px);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            z-index: 1000;
+            transition: all 0.3s;
+        }
+
+        .loading-overlay.show {
+            display: flex;
+        }
+
+        .spinner {
+            border: 3px solid rgba(99, 102, 241, 0.1);
+            border-top: 3px solid #6366f1;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: #94a3b8;
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        /* ─── Error Message ─── */
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            display: none;
+            font-size: 0.9rem;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .error-message button {
+            float: right;
+            background: none;
+            border: none;
+            color: #ef4444;
+            font-size: 1.25rem;
+            cursor: pointer;
+            line-height: 1;
+            margin-top: -2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🏥 <span class="gradient-text">Personalised Disease Risk Prediction</span></h1>
+            <p>Assess your diabetes risk with our AI-powered model</p>
+        </div>
+
+        <!-- Disease Selector Navigation -->
+        <div class="disease-nav">
+            <button class="disease-btn active" data-disease="diabetes">
+                <span>🩺</span> Diabetes
+            </button>
+            <button class="disease-btn" data-disease="heart_disease">
+                <span>🫀</span> Heart Disease
+            </button>
+            <button class="disease-btn" data-disease="stroke">
+                <span>🧠</span> Stroke
+            </button>
+            <button class="disease-btn" data-disease="asthma">
+                <span>🫁</span> Asthma
+            </button>
+            <button class="disease-btn" data-disease="kidney_disease">
+                <span>🩹</span> Kidney Disease
+            </button>
+            <button class="disease-btn" data-disease="arthritis">
+                <span>🦴</span> Arthritis
+            </button>
+        </div>
+
+        <!-- Main Right Side Container -->
+        <div class="content">
+            <!-- Form Panel -->
+            <div class="form-panel">
+                <h2>Your Information</h2>
+                
+                <div class="error-message" id="errorMessage">
+                    <span id="errorText"></span>
+                    <button onclick="document.getElementById('errorMessage').classList.remove('show')">&times;</button>
+                </div>
+
+                <form id="predictionForm">
+                    <!-- Age Group (Diabetes only) -->
+                    <div class="form-group f-diabetes">
+                        <label for="ageGroup">Age Group</label>
+                        <select id="ageGroup" name="age_group" required>
+                            <option value="">Select Age Group</option>
+                            <option value="18-24">18-24 years</option>
+                            <option value="25-29">25-29 years</option>
+                            <option value="30-34">30-34 years</option>
+                            <option value="35-39">35-39 years</option>
+                            <option value="40-44">40-44 years</option>
+                            <option value="45-49">45-49 years</option>
+                            <option value="50-54">50-54 years</option>
+                            <option value="55-59">55-59 years</option>
+                            <option value="60-64">60-64 years</option>
+                            <option value="65-69">65-69 years</option>
+                            <option value="70-74">70-74 years</option>
+                            <option value="75-79">75-79 years</option>
+                            <option value="80+">80+ years</option>
+                        </select>
+                    </div>
+
+                    <!-- Age (Heart Disease, Stroke, Asthma, Kidney Disease) -->
+                    <div class="form-group f-heart-disease f-stroke f-asthma f-kidney-disease f-arthritis" style="display: none;">
+                        <label for="age">Age (in years)</label>
+                        <input type="number" id="age" name="age" min="18" max="120" placeholder="e.g., 45">
+                    </div>
+
+                    <!-- Sex (All) -->
+                    <div class="form-group f-diabetes f-heart-disease f-stroke f-asthma f-kidney-disease f-arthritis">
+                        <label for="sex">Sex</label>
+                        <select id="sex" name="sex" required>
+                            <option value="">Select Sex</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                        </select>
+                    </div>
+
+                    <!-- BMI (All) -->
+                    <div class="form-group f-diabetes f-heart-disease f-stroke f-asthma f-kidney-disease f-arthritis">
+                        <label for="bmi">Body Mass Index (BMI)</label>
+                        <input type="number" id="bmi" name="bmi" step="0.1" min="10" max="60" placeholder="e.g., 27.5" required>
+                    </div>
+
+                    <!-- General Health (All) -->
+                    <div class="form-group f-diabetes f-heart-disease f-stroke f-asthma f-kidney-disease f-arthritis">
+                        <label for="generalHealth">General Health</label>
+                        <select id="generalHealth" name="general_health" required>
+                            <option value="">Select Health Status</option>
+                            <option value="Excellent">Excellent</option>
+                            <option value="Very Good">Very Good</option>
+                            <option value="Good">Good</option>
+                            <option value="Fair">Fair</option>
+                            <option value="Poor">Poor</option>
+                        </select>
+                    </div>
+
+                    <!-- Physical Health Days (Heart Disease, Asthma, Kidney Disease) -->
+                    <div class="form-group f-heart-disease f-asthma f-kidney-disease f-arthritis" style="display: none;">
+                        <label for="physicalHealthDays">Physical Health Days Not Good (in past 30 days)</label>
+                        <input type="number" id="physicalHealthDays" name="physical_health_days" min="0" max="30" placeholder="0-30 days" value="0">
+                    </div>
+
+                    <!-- Mental Health Days (Heart Disease, Asthma, Kidney Disease) -->
+                    <div class="form-group f-heart-disease f-asthma f-kidney-disease" style="display: none;">
+                        <label for="mentalHealthDays">Mental Health Days Not Good (in past 30 days)</label>
+                        <input type="number" id="mentalHealthDays" name="mental_health_days" min="0" max="30" placeholder="0-30 days" value="0">
+                    </div>
+
+                    <!-- Sleep Duration (Heart Disease, Stroke, Asthma, Kidney Disease) -->
+                    <div class="form-group f-heart-disease f-stroke f-asthma f-kidney-disease f-arthritis" style="display: none;">
+                        <label for="sleepDuration">Average Daily Sleep Duration (hours)</label>
+                        <input type="number" id="sleepDuration" name="sleep_duration" min="1" max="24" placeholder="e.g., 7" value="7">
+                    </div>
+
+                    <!-- Exercise (All) -->
+                    <div class="form-group f-diabetes f-heart-disease f-stroke f-asthma f-kidney-disease f-arthritis">
+                        <label for="exercise">Regular Exercise</label>
+                        <select id="exercise" name="exercise" required>
+                            <option value="">Select Exercise Activity</option>
+                            <option value="Yes">Yes, I exercise regularly</option>
+                            <option value="No">No, I do not exercise</option>
+                        </select>
+                    </div>
+
+                    <!-- Smoking History (All) -->
+                    <div class="form-group f-diabetes f-heart-disease f-stroke f-asthma f-kidney-disease f-arthritis">
+                        <label for="smoking">Smoking History (smoked 100+ cigarettes in lifetime?)</label>
+                        <select id="smoking" name="smoking" required>
+                            <option value="">Select Smoking History</option>
+                            <option value="Yes">Yes, I have smoked 100+ cigarettes</option>
+                            <option value="No">No, I have not</option>
+                        </select>
+                    </div>
+
+                    <!-- Smoker Status (Heart Disease & Kidney Disease) -->
+                    <div class="form-group f-heart-disease f-stroke f-kidney-disease f-arthritis" style="display: none;">
+                        <label for="smokerStatus">Current Smoking Frequency</label>
+                        <select id="smokerStatus" name="smoker_status">
+                            <option value="">Select Smoker Status</option>
+                            <option value="Everyday Smoker">Smokes every day</option>
+                            <option value="Someday Smoker">Smokes some days</option>
+                            <option value="Former Smoker">Former smoker (does not smoke now)</option>
+                            <option value="Never Smoked">Never smoked</option>
+                        </select>
+                    </div>
+
+                    <!-- Alcohol Consumption (Heart Disease, Stroke, Kidney Disease) -->
+                    <div class="form-group f-heart-disease f-stroke f-kidney-disease f-arthritis" style="display: none;">
+                        <label for="alcoholConsumption">Alcohol Consumption (at least 1 drink in past 30 days?)</label>
+                        <select id="alcoholConsumption" name="alcohol_consumption">
+                            <option value="">Select Option</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </div>
+
+                    <!-- Diabetes Status (Heart Disease, Stroke, Kidney Disease) -->
+                    <div class="form-group f-heart-disease f-stroke f-kidney-disease f-arthritis" style="display: none;">
+                        <label for="diabetes">Diabetes Status</label>
+                        <select id="diabetes" name="diabetes">
+                            <option value="">Select Option</option>
+                            <option value="Yes">Yes, I have diabetes</option>
+                            <option value="No">No, I do not have diabetes</option>
+                        </select>
+                    </div>
+
+                    <!-- AFib (Stroke only) -->
+                    <div class="form-group f-stroke" style="display: none;">
+                        <label for="afib">Atrial Fibrillation (AFib)</label>
+                        <select id="afib" name="afib">
+                            <option value="">Select Option</option>
+                            <option value="Yes">Yes, I have AFib</option>
+                            <option value="No">No, I do not</option>
+                        </select>
+                    </div>
+
+                    <!-- Difficulty Walking (Stroke only) -->
+                    <div class="form-group f-stroke f-arthritis" style="display: none;">
+                        <label for="diffWalking">Difficulty Walking or Climbing Stairs?</label>
+                        <select id="diffWalking" name="diff_walking">
+                            <option value="">Select Option</option>
+                            <option value="Yes">Yes, I have difficulty</option>
+                            <option value="No">No, I do not</option>
+                        </select>
+                    </div>
+
+                    <!-- COPD History (Asthma only) -->
+                    <div class="form-group f-asthma" style="display: none;">
+                        <label for="copd">Chronic Obstructive Pulmonary Disease (COPD) History</label>
+                        <select id="copd" name="copd">
+                            <option value="">Select Option</option>
+                            <option value="Yes">Yes, I have COPD</option>
+                            <option value="No">No, I do not</option>
+                        </select>
+                    </div>
+
+                    <!-- Heart Attack History (Diabetes only) -->
+                    <div class="form-group f-diabetes">
+                        <label for="heartAttack">Heart Attack History</label>
+                        <select id="heartAttack" name="heart_attack" required>
+                            <option value="">Select Answer</option>
+                            <option value="Yes">Yes, I've had a heart attack</option>
+                            <option value="No">No, I haven't</option>
+                        </select>
+                    </div>
+
+                    <!-- Heart Disease History (Diabetes & Stroke only) -->
+                    <div class="form-group f-diabetes f-stroke f-arthritis">
+                        <label for="heartDisease">Coronary Heart Disease History</label>
+                        <select id="heartDisease" name="heart_disease" required>
+                            <option value="">Select Answer</option>
+                            <option value="Yes">Yes, I have coronary heart disease</option>
+                            <option value="No">No, I do not</option>
+                        </select>
+                    </div>
+
+                    <!-- Stroke History (Diabetes only) -->
+                    <div class="form-group f-diabetes">
+                        <label for="stroke">Stroke History</label>
+                        <select id="stroke" name="stroke" required>
+                            <option value="">Select Answer</option>
+                            <option value="Yes">Yes, I've had a stroke</option>
+                            <option value="No">No, I haven't</option>
+                        </select>
+                    </div>
+
+                    <!-- Kidney Disease (Diabetes only) -->
+                    <div class="form-group f-diabetes">
+                        <label for="kidneyDisease">Kidney Disease History</label>
+                        <select id="kidneyDisease" name="kidney_disease" required>
+                            <option value="">Select Answer</option>
+                            <option value="Yes">Yes, I have kidney disease</option>
+                            <option value="No">No, I do not have it</option>
+                        </select>
+                    </div>
+
+                    <!-- Income level (Heart Disease, Stroke, Kidney Disease) -->
+                    <div class="form-group f-heart-disease f-stroke f-kidney-disease f-arthritis" style="display: none;">
+                        <label for="income">Annual Household Income</label>
+                        <select id="income" name="income">
+                            <option value="">Select Income Range</option>
+                            <option value="Under $10k">Under $10,000</option>
+                            <option value="$10k to $15k">$10,000 to $15,000</option>
+                            <option value="$15k to $20k">$15,000 to $20,000</option>
+                            <option value="$20k to $25k">$20,000 to $25,000</option>
+                            <option value="$25k to $35k">$25,000 to $35,000</option>
+                            <option value="$35k to $50k">$35,000 to $50,000</option>
+                            <option value="$50k to $75k">$50,000 to $75,000</option>
+                            <option value="$75k or more">$75,000 or more</option>
+                        </select>
+                    </div>
+
+                    <!-- Education level (Heart Disease, Stroke, Kidney Disease) -->
+                    <div class="form-group f-heart-disease f-stroke f-kidney-disease f-arthritis" style="display: none;">
+                        <label for="education">Highest Level of Education</label>
+                        <select id="education" name="education">
+                            <option value="">Select Education Level</option>
+                            <option value="Never attended school">Never attended school</option>
+                            <option value="Elementary school">Elementary school</option>
+                            <option value="Some high school">Some high school</option>
+                            <option value="High school graduate">High school graduate</option>
+                            <option value="Some college">Some college or technical school</option>
+                            <option value="College graduate">College graduate</option>
+                        </select>
+                    </div>
+
+                    <!-- Marital Status (Heart Disease & Kidney Disease) -->
+                    <div class="form-group f-heart-disease f-kidney-disease" style="display: none;">
+                        <label for="maritalStatus">Marital Status</label>
+                        <select id="maritalStatus" name="marital_status">
+                            <option value="">Select Status</option>
+                            <option value="Married">Married</option>
+                            <option value="Divorced">Divorced</option>
+                            <option value="Widowed">Widowed</option>
+                            <option value="Separated">Separated</option>
+                            <option value="Never married">Never married</option>
+                            <option value="A member of an unmarried couple">A member of an unmarried couple</option>
+                        </select>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-predict" id="predictBtn">Get Prediction</button>
+                        <button type="reset" class="btn btn-reset">Clear Form</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Results Panel -->
+            <div class="results-panel" id="resultsPanel">
+                <h2>Your Results</h2>
+
+                <div class="risk-display">
+                    <div class="risk-percentage" id="riskPercentage">--</div>
+                    <div class="risk-label" id="riskLabel">--</div>
+                    <div class="risk-bar">
+                        <div class="risk-bar-fill" id="riskBarFill" style="width: 0%"></div>
+                    </div>
+                    <div class="accuracy">
+                        Model Accuracy: <span id="accuracy">--</span>%
+                    </div>
+                </div>
+
+                <div class="recommendations">
+                    <h3>🎯 Personalized Recommendations</h3>
+                    <ul class="recommendation-list" id="recommendationList">
+                        <!-- Dynamically populated -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div style="text-align: center;">
+            <div class="spinner"></div>
+            <div class="loading-text">Analyzing your health profile...</div>
+        </div>
+    </div>
+
+    <script>
+        // ─── Form Submission ───
+        document.getElementById("predictionForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            
+            // Clear previous errors
+            document.getElementById("errorMessage").classList.remove("show");
+            
+            // Determine active disease
+            const disease = document.querySelector(".disease-btn.active").getAttribute("data-disease");
+            
+            // Get form data
+            const formData = {
+                bmi: document.getElementById("bmi").value,
+                age_group: document.getElementById("ageGroup").value,
+                age: document.getElementById("age").value,
+                sex: document.getElementById("sex").value,
+                general_health: document.getElementById("generalHealth").value,
+                smoking: document.getElementById("smoking").value,
+                exercise: document.getElementById("exercise").value,
+                heart_attack: document.getElementById("heartAttack").value,
+                heart_disease: document.getElementById("heartDisease").value,
+                stroke: document.getElementById("stroke").value,
+                kidney_disease: document.getElementById("kidneyDisease").value,
+                physical_health_days: document.getElementById("physicalHealthDays").value,
+                mental_health_days: document.getElementById("mentalHealthDays").value,
+                sleep_duration: document.getElementById("sleepDuration").value,
+                smoker_status: document.getElementById("smokerStatus").value,
+                alcohol_consumption: document.getElementById("alcoholConsumption").value,
+                diabetes: document.getElementById("diabetes").value,
+                afib: document.getElementById("afib").value,
+                diff_walking: document.getElementById("diffWalking").value,
+                income: document.getElementById("income").value,
+                education: document.getElementById("education").value,
+                marital_status: document.getElementById("maritalStatus").value,
+                copd: document.getElementById("copd").value
+            };
+
+            // Show loading spinner
+            document.getElementById("loadingOverlay").classList.add("show");
+            document.getElementById("predictBtn").disabled = true;
+
+            try {
+                // Call Flask API
+                const response = await fetch(`/predict/${disease}`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(formData),
+                });
+
+                const result = await response.json();
+
+                // Hide loading spinner
+                document.getElementById("loadingOverlay").classList.remove("show");
+                document.getElementById("predictBtn").disabled = false;
+
+                if (response.ok && result.status === "success") {
+                    // Display results
+                    displayResults(result);
+                } else {
+                    // Show error
+                    showError(result.message || "Prediction failed. Please try again.");
+                }
+            } catch (error) {
+                // Hide loading spinner
+                document.getElementById("loadingOverlay").classList.remove("show");
+                document.getElementById("predictBtn").disabled = false;
+                
+                showError(`Network error: ${error.message}`);
+            }
+        });
+
+        // ─── Display Results ───
+        function displayResults(data) {
+            const riskPercent = data.risk_percentage;
+            const riskLevel = data.risk_level.toLowerCase().split(" ")[0]; // "low", "medium", "high"
+            
+            // Determine color class
+            let colorClass = "low";
+            if (riskLevel === "low") {
+                colorClass = "low";
+            } else if (riskLevel === "medium") {
+                colorClass = "medium";
+            } else {
+                colorClass = "high";
+            }
+
+            // Update risk display
+            document.getElementById("riskPercentage").textContent = riskPercent + "%";
+            document.getElementById("riskPercentage").className = `risk-percentage ${colorClass}`;
+            document.getElementById("riskLabel").textContent = data.risk_level;
+            document.getElementById("riskLabel").className = `risk-label ${colorClass}`;
+            document.getElementById("riskBarFill").className = `risk-bar-fill ${colorClass}`;
+            document.getElementById("riskBarFill").style.width = riskPercent + "%";
+            document.getElementById("accuracy").textContent = (data.accuracy * 100).toFixed(1);
+
+            // Display recommendations
+            const recList = document.getElementById("recommendationList");
+            recList.innerHTML = "";
+            data.recommendations.forEach(rec => {
+                const li = document.createElement("li");
+                li.textContent = rec;
+                recList.appendChild(li);
+            });
+
+            // Show results panel
+            document.getElementById("resultsPanel").classList.add("show");
+            
+            // Scroll to results
+            document.getElementById("resultsPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+
+        // ─── Show Error Message ───
+        function showError(message) {
+            const errorDiv = document.getElementById("errorMessage");
+            document.getElementById("errorText").textContent = message;
+            errorDiv.classList.add("show");
+        }
+
+        // ─── Disease Navigation ───
+        document.querySelectorAll(".disease-btn").forEach(btn => {
+            btn.addEventListener("click", function() {
+                if (!this.classList.contains("inactive")) {
+                    document.querySelectorAll(".disease-btn").forEach(b => b.classList.remove("active"));
+                    this.classList.add("active");
+                    
+                    const disease = this.getAttribute("data-disease");
+                    updateFormFields(disease);
+                }
+            });
+        });
+
+        function updateFormFields(disease) {
+            // Hide all form groups and disable required validation
+            document.querySelectorAll(".form-group").forEach(group => {
+                group.style.display = "none";
+                const input = group.querySelector("input, select");
+                if (input) {
+                    input.required = false;
+                }
+            });
+
+            // Show appropriate form groups and make specific fields required
+            const visibleClass = `f-${disease.replace(/_/g, '-')}`;
+            document.querySelectorAll(`.form-group.${visibleClass}`).forEach(group => {
+                group.style.display = "block";
+                const input = group.querySelector("input, select");
+                if (input) {
+                    // Make select fields or vital inputs required
+                    if (input.tagName === "SELECT" || input.id === "bmi" || input.id === "age") {
+                        input.required = true;
+                    }
+                }
+            });
+
+            // Reset prediction panel
+            document.getElementById("resultsPanel").classList.remove("show");
+            
+            // Update header text based on disease
+            const displayNames = {
+                "diabetes": "Assess your diabetes risk with our AI-powered model",
+                "heart_disease": "Assess your coronary heart disease risk with our AI-powered model",
+                "stroke": "Assess your stroke risk with our AI-powered model",
+                "asthma": "Assess your asthma risk with our AI-powered model",
+                "kidney_disease": "Assess your kidney disease risk with our AI-powered model",
+                "arthritis": "Assess your arthritis risk with our AI-powered model"
+            };
+            document.querySelector(".header p").textContent = displayNames[disease] || "Assess your risk with our AI-powered models";
+        }
+
+        // ─── Initialize ───
+        document.addEventListener("DOMContentLoaded", function() {
+            // Trigger initial form rendering for diabetes
+            updateFormFields("diabetes");
+        });
+    </script>
+</body>
+</html>
